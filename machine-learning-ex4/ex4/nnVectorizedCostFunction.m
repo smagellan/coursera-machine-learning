@@ -1,4 +1,4 @@
-function [J grad] = nnIterativeCostFunction(nn_params, ...
+function [J grad] = nnVectorizedCostFunction(nn_params, ...
                                    input_layer_size, ...
                                    hidden_layer_size, ...
                                    num_labels, ...
@@ -59,39 +59,10 @@ Theta2_grad = zeros(size(Theta2));
 %               the regularization separately and then add them to Theta1_grad
 %               and Theta2_grad from Part 2.
 %
-% size(Theta1)
-% size(Theta2)
 
 
 Xw1 = [ones(m, 1), X];
-for i = 1:m
-    klass = y(i);
-    yVec = zeros(1, num_labels);
-    yVec(1, klass) = 1;
-
-    act1 = Xw1(i, :);
-    z2 = act1 * Theta1';
-    act2 = sigmoid(z2);
-
-    act2w1 = [1 act2];
-    z3 = act2w1 * Theta2';
-    act3 = sigmoid(z3);
-
-    J = J + sum(-yVec .* log(act3) - (1 - yVec) .* log(1 - act3));
-
-    sigma3   = act3 - yVec;
-    sigma2P1 = Theta2' * sigma3';
-    sigma2P1 = sigma2P1(2:end, 1);
-    sigma2   = sigma2P1 .* sigmoidGradient(z2)';
-
-    Theta2_grad = Theta2_grad + sigma3' * act2w1;
-    Theta1_grad = Theta1_grad + sigma2 * act1;
-end
-J = J / m;
-Theta2_grad = Theta2_grad ./ m;
-Theta1_grad = Theta1_grad ./ m;
-
-
+yVec = bsxfun(@eq, y, 1:num_labels);
 
 Theta1C = Theta1;
 Theta1C(:, 1) = 0;
@@ -99,11 +70,28 @@ Theta2C = Theta2;
 Theta2C(:, 1) = 0;
 
 
-regPart = (sum(sum(Theta1C .^ 2)) + sum(sum(Theta2C .^ 2))) * lambda / (2 * m);
-J = J + regPart;
+z2     = Xw1 * Theta1';
+act2   = sigmoid(z2);
+act2w1 = [ones(m, 1) act2];
+z3     = act2w1 * Theta2';
+act3   = sigmoid(z3);
+J      = sum(sum(-yVec .* log(act3) - (1 - yVec) .* log(1 - act3))) / m;
 
-Theta2_grad = Theta2_grad + lambda .* Theta2C / m;
-Theta1_grad = Theta1_grad + lambda .* Theta1C / m;
+
+JRegPart = (sum(sum(Theta1C .^ 2)) + sum(sum(Theta2C .^ 2))) * lambda / (2 * m);
+J = J + JRegPart;
+
+
+sigma3   = act3 - yVec;
+sigma2P1 = Theta2' * sigma3';
+sigma2P1 = sigma2P1(2:end, :);
+sigma2   = sigma2P1' .* sigmoidGradient(z2);
+
+delta2       = sigma3' * act2w1;
+delta1       = sigma2' * Xw1;
+
+Theta2_grad  = (delta2 + (lambda .* Theta2C)) ./ m;
+Theta1_grad  = (delta1 + (lambda .* Theta1C)) ./ m;
 
 % -------------------------------------------------------------
 
@@ -111,6 +99,4 @@ Theta1_grad = Theta1_grad + lambda .* Theta1C / m;
 
 % Unroll gradients
 grad = [Theta1_grad(:) ; Theta2_grad(:)];
-
-
 end
