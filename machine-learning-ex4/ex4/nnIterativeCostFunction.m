@@ -81,7 +81,7 @@ for i = 1:m
 
     sigma3   = act3 - yVec;
     sigma2P1 = Theta2' * sigma3';
-    sigma2P1 = sigma2P1(2:end, 1);
+    sigma2P1 = sigma2P1(2:end, :);
     sigma2   = sigma2P1 .* sigmoidGradient(z2)';
 
     Theta2_grad = Theta2_grad + sigma3' * act2w1;
