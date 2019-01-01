@@ -196,7 +196,11 @@ costFunction = @(p) nnCostFunction(p, ...
 
 % Now, costFunction is a function that takes in only one argument (the
 % neural network parameters)
+t0 = clock ();
 [nn_params, cost] = fmincg(costFunction, initial_nn_params, options);
+elapsed_time = etime (clock (), t0);
+fprintf('\ntraining took %d seconds\n', elapsed_time)
+
 
 % Obtain Theta1 and Theta2 back from nn_params
 Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
